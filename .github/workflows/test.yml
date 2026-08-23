@@ -13,6 +13,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test-unreachable-python-metadata:
+    name: fail when Python metadata is unreachable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Make Python lifecycle metadata unreachable
+        run: |
+          echo '127.0.0.1 endoflife.date' | sudo tee -a /etc/hosts
+          echo '::1 endoflife.date' | sudo tee -a /etc/hosts
+      - name: Verify Python lifecycle metadata is unreachable
+        run: |
+          if curl --silent --show-error --connect-timeout 2 https://endoflife.date/api/v1/products/python; then
+            echo 'expected endoflife.date to be unreachable' >&2
+            exit 1
+          fi
+      - id: supported-pythons
+        continue-on-error: true
+        uses: ./
+        with:
+          package: spacetelescope/romancal
+      - name: Verify the action fails
+        if: steps.supported-pythons.outcome != 'failure'
+        run: |
+          echo 'expected supported-pythons to fail when endoflife.date is unreachable' >&2
+          exit 1
+
   test-action:
     runs-on: ubuntu-latest
     strategy:

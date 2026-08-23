@@ -31,13 +31,19 @@ runs:
       run: mkdir ../package && cd ../package && curl https://pypi.org/pypi/${{ inputs.package }}/json | python -c "import json, sys; releases = json.loads(sys.stdin.read())[\"releases\"]; release = ${{ inputs.package-ref != '' && format('releases[\"{0}\"]', inputs.package-ref) || 'list(releases.values())[-1]' }}; print([dist for dist in release if dist[\"packagetype\"] == \"sdist\"][-1][\"url\"]);" | xargs -n 1 curl -L | tar xz --strip-components=1
       shell: bash
     - id: versions
-      run: echo versions=$(pipx run ${{ github.action_path }}/supported_pythons.py --package-source=../package/ ${{ inputs.no-eoas == 'true' && '--no-eoas' || '' }}) >> $GITHUB_OUTPUT
+      run: |
+        versions=$(pipx run ${{ github.action_path }}/supported_pythons.py --package-source=../package/ ${{ inputs.no-eoas == 'true' && '--no-eoas' || '' }})
+        printf 'versions=%s\n' "$versions" >> "$GITHUB_OUTPUT"
       shell: bash
     - id: oldest
-      run: echo oldest=$(python -c 'print(${{ steps.versions.outputs.versions }}[0])') >> $GITHUB_OUTPUT
+      run: |
+        oldest=$(python -c 'print(${{ steps.versions.outputs.versions }}[0])')
+        printf 'oldest=%s\n' "$oldest" >> "$GITHUB_OUTPUT"
       shell: bash
     - id: latest
-      run: echo latest=$(python -c 'print(${{ steps.versions.outputs.versions }}[-1])') >> $GITHUB_OUTPUT
+      run: |
+        latest=$(python -c 'print(${{ steps.versions.outputs.versions }}[-1])')
+        printf 'latest=%s\n' "$latest" >> "$GITHUB_OUTPUT"
       shell: bash
 
 outputs:
